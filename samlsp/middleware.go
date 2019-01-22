@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/crewjam/saml"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/tripism/saml"
 )
 
 // Middleware implements middleware than allows a web application
@@ -149,6 +150,7 @@ func (m *Middleware) RequireAccount(handler http.Handler) http.Handler {
 		m.ClientState.SetState(w, r, relayState, signedState)
 		if binding == saml.HTTPRedirectBinding {
 			redirectURL := req.Redirect(relayState)
+			spew.Dump(redirectURL)
 			w.Header().Add("Location", redirectURL.String())
 			w.WriteHeader(http.StatusFound)
 			return
