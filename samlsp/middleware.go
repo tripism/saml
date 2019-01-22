@@ -4,10 +4,10 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/tripism/saml"
 )
@@ -150,7 +150,7 @@ func (m *Middleware) RequireAccount(handler http.Handler) http.Handler {
 		m.ClientState.SetState(w, r, relayState, signedState)
 		if binding == saml.HTTPRedirectBinding {
 			redirectURL := req.Redirect(relayState)
-			spew.Dump(redirectURL)
+			fmt.Printf("SAML redirect URL - %s", redirectURL.String())
 			w.Header().Add("Location", redirectURL.String())
 			w.WriteHeader(http.StatusFound)
 			return
