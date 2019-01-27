@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/beevik/etree"
-	"github.com/tripism/saml/logger"
-	"github.com/tripism/saml/xmlenc"
 	dsig "github.com/russellhaering/goxmldsig"
 	"github.com/russellhaering/goxmldsig/etreeutils"
+	"github.com/tripism/saml/logger"
+	"github.com/tripism/saml/xmlenc"
 )
 
 // NameIDFormat is the format of the id
@@ -33,10 +33,11 @@ func (n NameIDFormat) Element() *etree.Element {
 }
 
 // Name ID formats
+// See http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
 const (
-	UnspecifiedNameIDFormat  NameIDFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:unspecified"
+	UnspecifiedNameIDFormat  NameIDFormat = "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
 	TransientNameIDFormat    NameIDFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
-	EmailAddressNameIDFormat NameIDFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress"
+	EmailAddressNameIDFormat NameIDFormat = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
 	PersistentNameIDFormat   NameIDFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
 )
 
@@ -372,6 +373,12 @@ func (ivr *InvalidResponseError) Error() string {
 	return fmt.Sprintf("Authentication failed")
 }
 
+type ErrStatus string
+
+func (e ErrStatus) Error() string {
+	return string(e)
+}
+
 // ParseResponse extracts the SAML IDP response received in req, validates
 // it, and returns the verified attributes of the request.
 //
@@ -428,7 +435,7 @@ func (sp *ServiceProvider) ParseResponse(req *http.Request, possibleRequestIDs [
 		return nil, retErr
 	}
 	if resp.Status.StatusCode.Value != StatusSuccess {
-		retErr.PrivateErr = fmt.Errorf("Status code was not %s", StatusSuccess)
+		retErr.PrivateErr = ErrStatus(resp.Status.StatusCode.Value)
 		return nil, retErr
 	}
 
