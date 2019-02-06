@@ -78,8 +78,13 @@ func (m *Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		assertion, err := m.ServiceProvider.ParseResponse(r, m.getPossibleRequestIDs(r))
 		if err != nil {
 			if parseErr, ok := err.(*saml.InvalidResponseError); ok {
-				m.ServiceProvider.Logger.Printf("RESPONSE: ===\n%s\n===\nNOW: %s\nERROR: %s",
-					parseErr.Response, parseErr.Now, parseErr.PrivateErr)
+				m.ServiceProvider.Logger.Print("Error parsing SAML response")
+				m.ServiceProvider.Logger.Print("RESPONSE:")
+				m.ServiceProvider.Logger.Print(parseErr.Response)
+				if parseErr.PrivateErr != nil {
+					m.ServiceProvider.Logger.Print("ERROR:")
+					m.ServiceProvider.Logger.Print(parseErr.PrivateErr)
+				}
 			}
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
