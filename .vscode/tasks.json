@@ -1,0 +1,23 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "staticcheck-stylish",
+            "type": "shell",
+            "command": "staticcheck -go 1.11 -f stylish -checks=\"inherit,-ST1005\"",
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "staticcheck",
+            "type": "shell",
+            "command": "staticcheck -go 1.11 -checks=\"inherit,-ST1005\"",
+            "problemMatcher": [
+                "$go"
+            ]
+        }        
+    ]
+}
