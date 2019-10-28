@@ -206,54 +206,48 @@ func (sp *ServiceProvider) GetSSOBindingLocation(binding string) string {
 	return ""
 }
 
-// getIDPSigningCerts returns the certificates which we can use to verify things
+// getIDPSigningCert returns the certificate which we can use to verify things
 // signed by the IDP in PEM format, or nil if no such certificate is found.
-func (sp *ServiceProvider) getIDPSigningCerts() ([]*x509.Certificate, error) {
-	var certStrs []string
+func (sp *ServiceProvider) getIDPSigningCert() (*x509.Certificate, error) {
+	certStr := ""
 	for _, idpSSODescriptor := range sp.IDPMetadata.IDPSSODescriptors {
 		for _, keyDescriptor := range idpSSODescriptor.KeyDescriptors {
 			if keyDescriptor.Use == "signing" {
-				certStrs = append(certStrs, keyDescriptor.KeyInfo.Certificate)
+				certStr = keyDescriptor.KeyInfo.Certificate
+				break
 			}
 		}
 	}
 
 	// If there are no explicitly signing certs, just return the first
 	// non-empty cert we find.
-	if len(certStrs) == 0 {
+	if certStr == "" {
 		for _, idpSSODescriptor := range sp.IDPMetadata.IDPSSODescriptors {
 			for _, keyDescriptor := range idpSSODescriptor.KeyDescriptors {
 				if keyDescriptor.Use == "" && keyDescriptor.KeyInfo.Certificate != "" {
-					certStrs = append(certStrs, keyDescriptor.KeyInfo.Certificate)
+					certStr = keyDescriptor.KeyInfo.Certificate
 					break
 				}
 			}
 		}
 	}
 
-	if len(certStrs) == 0 {
+	if certStr == "" {
 		return nil, errors.New("cannot find any signing certificate in the IDP SSO descriptor")
 	}
 
-	var certs []*x509.Certificate
-
 	// cleanup whitespace
-	regex := regexp.MustCompile(`\s+`)
-	for _, certStr := range certStrs {
-		certStr = regex.ReplaceAllString(certStr, "")
-		certBytes, err := base64.StdEncoding.DecodeString(certStr)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse certificate: %s", err)
-		}
-
-		parsedCert, err := x509.ParseCertificate(certBytes)
-		if err != nil {
-			return nil, err
-		}
-		certs = append(certs, parsedCert)
+	certStr = regexp.MustCompile(`\s+`).ReplaceAllString(certStr, "")
+	certBytes, err := base64.StdEncoding.DecodeString(certStr)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse certificate: %s", err)
 	}
 
-	return certs, nil
+	parsedCert, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		return nil, err
+	}
+	return parsedCert, nil
 }
 
 // MakeAuthenticationRequest produces a new AuthnRequest object for idpURL.
@@ -556,7 +550,7 @@ func (sp *ServiceProvider) validateAssertion(assertion *Assertion, possibleReque
 		return fmt.Errorf("Conditions is expired")
 	}
 
-	audienceRestrictionsValid := len(assertion.Conditions.AudienceRestrictions) == 0
+	audienceRestrictionsValid := false
 	for _, audienceRestriction := range assertion.Conditions.AudienceRestrictions {
 		if audienceRestriction.Audience.Value == sp.MetadataURL.String() {
 			audienceRestrictionsValid = true
@@ -640,13 +634,13 @@ func (sp *ServiceProvider) validateSigned(responseEl *etree.Element) error {
 
 // validateSignature returns nill iff the Signature embedded in the element is valid
 func (sp *ServiceProvider) validateSignature(el *etree.Element) error {
-	certs, err := sp.getIDPSigningCerts()
+	cert, err := sp.getIDPSigningCert()
 	if err != nil {
 		return err
 	}
 
 	certificateStore := dsig.MemoryX509CertificateStore{
-		Roots: certs,
+		Roots: []*x509.Certificate{cert},
 	}
 
 	validationContext := dsig.NewDefaultValidationContext(&certificateStore)

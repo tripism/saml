@@ -72,12 +72,7 @@ func (t DurationTest) TestUnmarshalText(c *C) {
 	for _, tc := range durationUnmarshalTests {
 		var d Duration
 		err := d.UnmarshalText(tc.in)
-		if tc.err == nil {
-			c.Assert(err, IsNil)
-		} else {
-			c.Assert(err, NotNil)
-			c.Assert(err.Error(), Equals, tc.err.Error())
-		}
+		c.Assert(err, DeepEquals, tc.err)
 		c.Assert(d, Equals, Duration(tc.out))
 	}
 }

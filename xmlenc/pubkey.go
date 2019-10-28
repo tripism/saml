@@ -107,15 +107,14 @@ func (e RSA) Decrypt(key interface{}, ciphertextEl *etree.Element) ([]byte, erro
 	{
 		digestMethodEl := ciphertextEl.FindElement("./EncryptionMethod/DigestMethod")
 		if digestMethodEl == nil {
-			e.DigestMethod = SHA1
-		} else {
-			hashAlgorithmStr := digestMethodEl.SelectAttrValue("Algorithm", "")
-			digestMethod, ok := digestMethods[hashAlgorithmStr]
-			if !ok {
-				return nil, ErrAlgorithmNotImplemented(hashAlgorithmStr)
-			}
-			e.DigestMethod = digestMethod
+			return nil, fmt.Errorf("cannot find required DigestMethod element")
 		}
+		hashAlgorithmStr := digestMethodEl.SelectAttrValue("Algorithm", "")
+		digestMethod, ok := digestMethods[hashAlgorithmStr]
+		if !ok {
+			return nil, ErrAlgorithmNotImplemented(hashAlgorithmStr)
+		}
+		e.DigestMethod = digestMethod
 	}
 
 	return e.keyDecrypter(e, rsaKey, ciphertext)
