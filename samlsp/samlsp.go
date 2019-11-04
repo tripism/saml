@@ -41,6 +41,15 @@ func New(opts Options) (*Middleware, error) {
 	metadataURL := opts.URL.ResolveReference(metadataRelURL)
 	acsRelURL, _ := url.Parse("saml/acs")
 	acsURL := opts.URL.ResolveReference(acsRelURL)
+
+	// ResolveReference above makes
+	// http://<host>/v0/dell + saml/acs = http://<host>/v0/saml/acs
+	// when must be
+	// http://<host>/v0/dell/saml/acs
+	// so fixing it below
+	metadataURL.Path = opts.URL.Path + "/saml/metadata"
+	acsURL.Path = opts.URL.Path + "/saml/acs"
+
 	logr := opts.Logger
 	if logr == nil {
 		logr = logger.DefaultLogger
